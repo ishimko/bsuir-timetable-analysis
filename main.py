@@ -2,68 +2,112 @@ import xml.etree.ElementTree as ET
 from urllib import request
 import re
 
-GROUPS_LIST_URL = "http://www.bsuir.by/schedule/rest/studentGroup"
-LECTURERS_LIST_URL = "http://www.bsuir.by/schedule/rest/employee"
-
+GROUPS_LIST_URL = r'http://www.bsuir.by/schedule/rest/studentGroup'
+GROUP_TIMETABLE_URL = r'http://www.bsuir.by/schedule/rest/schedule'
+DAYS_LIST = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота']
 
 def get_page(url):
-    print("Загружаю " + url + "...")
+    print('Загрузка ' + url + '...')
     return request.urlopen(url).read().decode("utf-8")
 
 
-def get_lecturer_timetable(lecturer_id):
-    return get_page(LECTURERS_LIST_URL + "/" + str(lecturer_id))
-
-
 def get_group_timetable(group_id):
-    return get_page(GROUPS_LIST_URL + "/" + str(group_id))
+    return get_page(GROUP_TIMETABLE_URL + "/" + str(group_id))
 
 
-def parse_auditory(lesson_xml):
-    auditory_xml = lesson_xml.find("auditory")
-    if auditory_xml:
-        auditory_str = auditory_xml.text
+def parse_auditorium(lesson_xml):
+    auditory_xml = lesson_xml.find('auditory')
+    if auditory_xml is not None:
+        auditory_info = auditory_xml.text
     else:
         return None
 
-    result = {}
-    auditory_str = re.sub(r"\D", " ", auditory_str).split()
-    result['number'] = int(auditory_str[0])
-    result['building'] = int(auditory_str[1])
+    auditory_info = re.sub(r'\D', ' ', auditory_info).split()
 
-    return result
+    if len(auditory_info) != 2:
+        return None
+
+    return {'number': int(auditory_info[0]), 'building': int(auditory_info[1])}
 
 
 def parse_lesson_time(lesson_xml):
     lesson_time_str = lesson_xml.find("lessonTime").text
-    lesson_time_values = re.sub(r"\D", " ", lesson_time_str).split()
+    lesson_time_values = re.sub(r'\D', ' ', lesson_time_str).split()
 
-    return {"start_time": int(''.join(lesson_time_values[:2])), "end_time": int(''.join(lesson_time_values[2:4]))}
+    return {'start_time': int(''.join(lesson_time_values[:2])), 'end_time': int(''.join(lesson_time_values[2:4]))}
 
 
 def parse_lesson_week_number(lesson_xml):
     result = []
-    for week_number in lesson_xml.iter("weekNumber"):
+    for week_number in lesson_xml.iter('weekNumber'):
         if int(week_number.text) != 0:
             result.append(int(week_number.text))
 
     return result
 
-def get_all_auditories(groups_timetables_list):
-    result = []
+
+def parse_day_timetable(day_timetable_xml):
+    result = {'week_day': day_timetable_xml.find('weekDay').text, 'lessons': []}
+
+    for current_lesson_xml in day_timetable_xml.iter('schedule'):
+        auditorium = parse_auditorium(current_lesson_xml)
+        if auditorium:
+            lesson = {'week_number': parse_lesson_week_number(current_lesson_xml),
+                      'lesson_time': parse_lesson_time(current_lesson_xml),
+                      'auditorium': auditorium}
+            result['lessons'].append(lesson)
+
+    return result
+
+
+def get_all_auditoriums(groups_timetables_list):
+    result = set()
     for group_timetable in groups_timetables_list:
-        auditory = group_timetable
-        result.append(parse_auditory(group_timetable))
+        for current_day in group_timetable.iter('scheduleModel'):
+            for current_lesson in current_day.iter('schedule'):
+                auditory = parse_auditorium(current_lesson)
+                if auditory:
+                    result.append(auditory)
+
+    return result
 
 
-def parse_group_info(group_xml):
-    return {'number': group_xml.find("name").text, 'id': int(group_xml.find["id"].text)}
+def get_all_groups_ids():
+    result = []
+    groups_xml = ET.fromstring(get_page(GROUPS_LIST_URL))
+    for current_group in groups_xml.iter("studentGroup"):
+        result.append(current_group.find("id").text)
+
+    return result
 
 
+def parse_group_timetable(group_timetable_xml):
+    result = {day: [] for day in DAYS_LIST}
+    for current_day_xml in group_timetable_xml.iter('scheduleModel'):
+        day_timetable = parse_day_timetable(current_day_xml)
+        result[day_timetable['week_day']].extend(day_timetable['lessons'])
+
+    return result
+
+
+def get_full_timetables(groups_ids):
+    result = {day: [] for day in DAYS_LIST}
+    groups_count = len(groups_ids)
+    i = 1
+    for group_id in groups_ids:
+        print(r"{}/{}".format(i, groups_count))
+        group_timetable_xml = ET.fromstring(get_group_timetable(group_id))
+        group_timetable = parse_group_timetable(group_timetable_xml)
+        for day in group_timetable:
+            result[day].extend(group_timetable[day])
+
+        i += 1
+
+    return result
 
 
 if __name__ == '__main__':
-    lesson_number = int(input("Введите номер пары: "))
-    for schedule_model in xml.findall("scheduleModel"):
-        print(schedule_model.find("weekNumber").text)
-
+   # lesson_number = int(input('Введите номер пары: '))
+    groups_ids = get_all_groups_ids()
+    timetable = get_full_timetables(groups_ids_list)
+    print(groups_ids_list)
