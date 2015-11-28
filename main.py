@@ -136,8 +136,12 @@ def get_full_timetable():
     return timetable
 
 
-def get_empty_auditorium(lesson_number, week_number, day, full_auditoriums):
-    empty_auditoriums_list = full_auditoriums.copy()
+def get_empty_auditorium(lesson_number, week_number, day, building_numbers, full_auditoriums_list, full_timetable):
+    if building_numbers != [0]:
+        empty_auditoriums_list = list(filter(lambda x: x['building'] in building_numbers, full_auditoriums_list))
+    else:
+        empty_auditoriums_list = full_auditoriums_list
+
     for group_timetable in full_timetable:
         for current_day_name in group_timetable['timetable']:
             if day.lower() == current_day_name.lower():
@@ -180,6 +184,7 @@ if __name__ == '__main__':
     isToday = input(r'Сегодня? (yes/no)') == 'yes'
 
     lesson_number = int(input('Введите номер пары: '))
+    building_numbers = [int(x) for x in input('Введите номер(а) корпусов (0 - все корпуса): ').split()]
 
     if isToday:
         week_number = get_current_week_number()
@@ -189,8 +194,9 @@ if __name__ == '__main__':
         week_number = int(input('Введите номер недели: '))
         day = input('Введите день недели: ')
 
-    auditoriums_list = get_all_auditoriums(get_full_timetable())
-    empty_auditoriums = get_empty_auditorium(lesson_number, week_number, day, auditoriums_list)
+    full_timetable = get_full_timetable()
+    auditoriums_list = get_all_auditoriums(full_timetable)
+    empty_auditoriums = get_empty_auditorium(lesson_number, week_number, day, building_numbers, auditoriums_list,
+                                             full_timetable)
     empty_auditoriums.sort(key=cmp_to_key(auditoriums_comparator))
     print_result(empty_auditoriums)
-
