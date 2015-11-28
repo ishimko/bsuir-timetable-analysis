@@ -149,7 +149,7 @@ def get_empty_auditorium(lesson_number, week_number, day, building_numbers, full
                     if week_number in lesson['week_numbers'] and \
                             lesson['lesson_time']['start_time'] <= LESSONS_TIME[lesson_number]['start_time'] and \
                             lesson['lesson_time']['end_time'] >= LESSONS_TIME[lesson_number]['end_time']:
-                            empty_auditoriums.discard(lesson['auditorium'])
+                        empty_auditoriums.discard(lesson['auditorium'])
     return empty_auditoriums
 
 
