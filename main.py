@@ -7,7 +7,8 @@ import pickle
 GROUPS_LIST_URL = r'http://www.bsuir.by/schedule/rest/studentGroup'
 GROUP_TIMETABLE_URL = r'http://www.bsuir.by/schedule/rest/schedule'
 DAYS_LIST = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота']
-FILENAME = 'timetable.dat'
+TIMETABLE_CACHE_PATH = 'timetable.dat'
+
 
 def get_page(url):
     print('Загрузка ' + url + '...')
@@ -63,14 +64,12 @@ def parse_day_timetable(day_timetable_xml):
     return result
 
 
-def get_all_auditoriums(groups_timetables_list):
-    result = set()
-    for group_timetable in groups_timetables_list:
-        for current_day in group_timetable.iter('scheduleModel'):
-            for current_lesson in current_day.iter('schedule'):
-                auditory = parse_auditorium(current_lesson)
-                if auditory:
-                    result.append(auditory)
+def get_all_auditoriums(full_timetable):
+    result = []
+    for group_timetable in full_timetable:
+        for day in group_timetable['timetable'].values():
+            for lesson in day:
+                result.append(lesson['auditorium'])
 
     return result
 
@@ -94,37 +93,46 @@ def parse_group_timetable(group_timetable_xml):
 
 
 def load_full_timetable(groups_ids):
-    result = {day: [] for day in DAYS_LIST}
     groups_count = len(groups_ids)
     i = 1
-    f = open(FILENAME, 'wb')
-    loaded_timetables = pickle.load(f)
+
+    full_timetable = []
+
     for group_id in groups_ids:
         print(r"{}/{}".format(i, groups_count))
         group_timetable_xml = ET.fromstring(get_group_timetable(group_id))
-        group_timetable = parse_group_timetable(group_timetable_xml)
-        for day in group_timetable:
-            result[day].extend(group_timetable[day])
+        group_timetable = {'id': group_id, 'timetable': parse_group_timetable(group_timetable_xml)}
+        full_timetable.append(group_timetable)
 
         i += 1
 
-    return result
+    return full_timetable
 
 
 def get_full_timetable():
-    if path.isfile(filename):
-        f = open(filename, 'rb')
+    if path.isfile(TIMETABLE_CACHE_PATH):
+        f = open(TIMETABLE_CACHE_PATH, 'rb')
         timetable = pickle.load(f)
         f.close()
     else:
         groups_ids_list = get_all_groups_ids()
         timetable = load_full_timetable(groups_ids_list)
-        f = open(filename, 'wb')
+        f = open(TIMETABLE_CACHE_PATH, 'wb')
         pickle.dump(timetable, f)
         f.close()
+
     return timetable
 
 
+# def get_empty_auditorium(lesson_number, week_number, building_number):
+
+
+
 if __name__ == '__main__':
-   # lesson_number = int(input('Введите номер пары: '))
-    full_timetable = get_full_timetable('timetable.dat')
+    # lesson_number = int(input('Введите номер пары: '))
+    # week_number = int(intput('Введите номер недели: '))
+    # building_number = int(input('Введите номер корпуса: '))
+    full_timetable = get_full_timetable()
+    auditoriums_list = get_all_auditoriums(full_timetable)
+    for auditorium in auditoriums_list:
+        print('{auditorium[number]}-{auditorium[building]}'.format(auditorium=auditorium))
