@@ -137,7 +137,7 @@ def get_full_timetable():
 
 
 def get_empty_auditorium(lesson_number, week_number, day, building_numbers, full_auditoriums_list, full_timetable):
-    if building_numbers != [0]:
+    if building_numbers[0] != 0:
         empty_auditoriums_list = list(filter(lambda x: x['building'] in building_numbers, full_auditoriums_list))
     else:
         empty_auditoriums_list = full_auditoriums_list
@@ -148,8 +148,8 @@ def get_empty_auditorium(lesson_number, week_number, day, building_numbers, full
                 current_day = group_timetable['timetable'][current_day_name]
                 for lesson in current_day:
                     if week_number in lesson['week_numbers'] and \
-                                    lesson['lesson_time']['start_time'] <= LESSONS_TIME[lesson_number]['start_time'] and \
-                                    lesson['lesson_time']['end_time'] >= LESSONS_TIME[lesson_number]['end_time']:
+                            lesson['lesson_time']['start_time'] <= LESSONS_TIME[lesson_number]['start_time'] and \
+                            lesson['lesson_time']['end_time'] >= LESSONS_TIME[lesson_number]['end_time']:
                         if lesson['auditorium'] in empty_auditoriums_list:
                             empty_auditoriums_list.remove(lesson['auditorium'])
     return empty_auditoriums_list
@@ -160,11 +160,10 @@ def auditoriums_comparator(a, b):
         return 1
     elif a['building'] < b['building']:
         return -1
-    elif a['building'] == b['building']:
-        if a['number'] > b['number']:
-            return 1
-        else:
-            return -1
+    elif a['number'] > b['number']:
+        return 1
+    else:
+        return -1
 
 
 def get_current_week_number():
@@ -181,7 +180,7 @@ def print_result(auditoriums_list):
 
 
 if __name__ == '__main__':
-    isToday = input(r'Сегодня? (yes/no)') == 'yes'
+    isToday = input(r'Сегодня? (yes/no): ') == 'yes'
 
     lesson_number = int(input('Введите номер пары: '))
     building_numbers = [int(x) for x in input('Введите номер(а) корпусов (0 - все корпуса): ').split()]
