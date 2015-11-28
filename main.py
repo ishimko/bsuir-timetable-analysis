@@ -10,7 +10,7 @@ GROUPS_LIST_URL = r'http://www.bsuir.by/schedule/rest/studentGroup'
 GROUP_TIMETABLE_URL = r'http://www.bsuir.by/schedule/rest/schedule'
 BSUIR_MAIN_PAGE = r'http://www.bsuir.by/'
 DAYS_LIST = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота']
-TIMETABLE_CACHE_PATH = 'timetable.dat'
+TIMETABLE_CACHE_PATH = 'timetable1.dat'
 LESSONS_TIME = {
     1: {'start_time': 800, 'end_time': 935},
     2: {'start_time': 945, 'end_time': 1120},
@@ -31,18 +31,18 @@ def get_group_timetable(group_id):
 
 
 def parse_auditorium(lesson_xml):
-    auditory_xml = lesson_xml.find('auditory')
-    if auditory_xml is not None:
-        auditory_info = auditory_xml.text
+    auditorium_xml = lesson_xml.find('auditory')
+    if auditorium_xml is not None:
+        auditorium_info = auditorium_xml.text
     else:
         return None
 
-    auditory_info = re.sub(r'\D', ' ', auditory_info).split()
+    auditorium_info = re.sub(r'\D', ' ', auditorium_info).split()
 
-    if len(auditory_info) != 2:
+    if len(auditorium_info) != 2:
         return None
 
-    return {'number': int(auditory_info[0]), 'building': int(auditory_info[1])}
+    return int(auditorium_info[0]), int(auditorium_info[1])
 
 
 def parse_lesson_time(lesson_xml):
@@ -76,12 +76,11 @@ def parse_day_timetable(day_timetable_xml):
 
 
 def get_all_auditoriums(full_timetable):
-    result = []
+    result = set()
     for group_timetable in full_timetable:
         for day in group_timetable['timetable'].values():
             for lesson in day:
-                if not (lesson['auditorium'] in result):
-                    result.append(lesson['auditorium'])
+                result.add(lesson['auditorium'])
 
     return result
 
@@ -136,11 +135,11 @@ def get_full_timetable():
     return timetable
 
 
-def get_empty_auditorium(lesson_number, week_number, day, building_numbers, full_auditoriums_list, full_timetable):
+def get_empty_auditorium(lesson_number, week_number, day, building_numbers, full_auditoriums, full_timetable):
     if building_numbers[0] != 0:
-        empty_auditoriums_list = list(filter(lambda x: x['building'] in building_numbers, full_auditoriums_list))
+        empty_auditoriums = set(filter(lambda x: x[1] in building_numbers, full_auditoriums))
     else:
-        empty_auditoriums_list = full_auditoriums_list
+        empty_auditoriums = full_auditoriums
 
     for group_timetable in full_timetable:
         for current_day_name in group_timetable['timetable']:
@@ -150,17 +149,16 @@ def get_empty_auditorium(lesson_number, week_number, day, building_numbers, full
                     if week_number in lesson['week_numbers'] and \
                             lesson['lesson_time']['start_time'] <= LESSONS_TIME[lesson_number]['start_time'] and \
                             lesson['lesson_time']['end_time'] >= LESSONS_TIME[lesson_number]['end_time']:
-                        if lesson['auditorium'] in empty_auditoriums_list:
-                            empty_auditoriums_list.remove(lesson['auditorium'])
-    return empty_auditoriums_list
+                            empty_auditoriums.discard(lesson['auditorium'])
+    return empty_auditoriums
 
 
 def auditoriums_comparator(a, b):
-    if a['building'] > b['building']:
+    if a[1] > b[1]:
         return 1
-    elif a['building'] < b['building']:
+    elif a[1] < b[1]:
         return -1
-    elif a['number'] > b['number']:
+    elif a[0] > b[0]:
         return 1
     else:
         return -1
@@ -176,7 +174,7 @@ def get_current_week_day():
 
 def print_result(auditoriums_list):
     for auditorium in auditoriums_list:
-        print('{auditorium[number]}-{auditorium[building]}'.format(auditorium=auditorium))
+        print('{auditorium[0]}-{auditorium[1]}'.format(auditorium=auditorium))
 
 
 if __name__ == '__main__':
@@ -197,5 +195,5 @@ if __name__ == '__main__':
     auditoriums_list = get_all_auditoriums(full_timetable)
     empty_auditoriums = get_empty_auditorium(lesson_number, week_number, day, building_numbers, auditoriums_list,
                                              full_timetable)
-    empty_auditoriums.sort(key=cmp_to_key(auditoriums_comparator))
-    print_result(empty_auditoriums)
+    empty_auditoriums_list = sorted(empty_auditoriums, key=cmp_to_key(auditoriums_comparator))
+    print_result(empty_auditoriums_list)
