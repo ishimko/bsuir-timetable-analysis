@@ -1,10 +1,13 @@
 import xml.etree.ElementTree as ET
 from urllib import request
 import re
+from os import path
+import pickle
 
 GROUPS_LIST_URL = r'http://www.bsuir.by/schedule/rest/studentGroup'
 GROUP_TIMETABLE_URL = r'http://www.bsuir.by/schedule/rest/schedule'
 DAYS_LIST = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота']
+FILENAME = 'timetable.dat'
 
 def get_page(url):
     print('Загрузка ' + url + '...')
@@ -90,10 +93,12 @@ def parse_group_timetable(group_timetable_xml):
     return result
 
 
-def get_full_timetables(groups_ids):
+def load_full_timetable(groups_ids):
     result = {day: [] for day in DAYS_LIST}
     groups_count = len(groups_ids)
     i = 1
+    f = open(FILENAME, 'wb')
+    loaded_timetables = pickle.load(f)
     for group_id in groups_ids:
         print(r"{}/{}".format(i, groups_count))
         group_timetable_xml = ET.fromstring(get_group_timetable(group_id))
@@ -106,8 +111,20 @@ def get_full_timetables(groups_ids):
     return result
 
 
+def get_full_timetable():
+    if path.isfile(filename):
+        f = open(filename, 'rb')
+        timetable = pickle.load(f)
+        f.close()
+    else:
+        groups_ids_list = get_all_groups_ids()
+        timetable = load_full_timetable(groups_ids_list)
+        f = open(filename, 'wb')
+        pickle.dump(timetable, f)
+        f.close()
+    return timetable
+
+
 if __name__ == '__main__':
    # lesson_number = int(input('Введите номер пары: '))
-    groups_ids = get_all_groups_ids()
-    timetable = get_full_timetables(groups_ids_list)
-    print(groups_ids_list)
+    full_timetable = get_full_timetable('timetable.dat')
