@@ -8,7 +8,7 @@ from functools import cmp_to_key
 GROUPS_LIST_URL = r'http://www.bsuir.by/schedule/rest/studentGroup'
 GROUP_TIMETABLE_URL = r'http://www.bsuir.by/schedule/rest/schedule'
 DAYS_LIST = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота']
-TIMETABLE_CACHE_PATH = 'timetable1.dat'
+TIMETABLE_CACHE_PATH = 'timetable.dat'
 LESSONS_TIME = {
     1: {'start_time': 800, 'end_time': 935},
     2: {'start_time': 945, 'end_time': 1120},
