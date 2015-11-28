@@ -3,11 +3,20 @@ from urllib import request
 import re
 from os import path
 import pickle
+from functools import cmp_to_key
 
 GROUPS_LIST_URL = r'http://www.bsuir.by/schedule/rest/studentGroup'
 GROUP_TIMETABLE_URL = r'http://www.bsuir.by/schedule/rest/schedule'
 DAYS_LIST = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота']
-TIMETABLE_CACHE_PATH = 'timetable.dat'
+TIMETABLE_CACHE_PATH = 'timetable1.dat'
+LESSONS_TIME = {
+    1: {'start_time': 800, 'end_time': 935},
+    2: {'start_time': 945, 'end_time': 1120},
+    3: {'start_time': 1140, 'end_time': 1315},
+    4: {'start_time': 1325, 'end_time': 1500},
+    5: {'start_time': 1520, 'end_time': 1655},
+    6: {'start_time': 1705, 'end_time': 1840}
+}
 
 
 def get_page(url):
@@ -56,7 +65,7 @@ def parse_day_timetable(day_timetable_xml):
     for current_lesson_xml in day_timetable_xml.iter('schedule'):
         auditorium = parse_auditorium(current_lesson_xml)
         if auditorium:
-            lesson = {'week_number': parse_lesson_week_number(current_lesson_xml),
+            lesson = {'week_numbers': parse_lesson_week_number(current_lesson_xml),
                       'lesson_time': parse_lesson_time(current_lesson_xml),
                       'auditorium': auditorium}
             result['lessons'].append(lesson)
@@ -69,7 +78,8 @@ def get_all_auditoriums(full_timetable):
     for group_timetable in full_timetable:
         for day in group_timetable['timetable'].values():
             for lesson in day:
-                result.append(lesson['auditorium'])
+                if not (lesson['auditorium'] in result):
+                    result.append(lesson['auditorium'])
 
     return result
 
@@ -124,15 +134,41 @@ def get_full_timetable():
     return timetable
 
 
-# def get_empty_auditorium(lesson_number, week_number, building_number):
+def get_empty_auditorium(lesson_number, week_number, day, full_auditoriums):
+    empty_auditoriums_list = full_auditoriums.copy()
+    for group_timetable in full_timetable:
+        for current_day_name in group_timetable['timetable']:
+            if day.lower() == current_day_name.lower():
+                current_day = group_timetable['timetable'][current_day_name]
+                for lesson in current_day:
+                    if week_number in lesson['week_numbers'] and \
+                                    lesson['lesson_time']['start_time'] == LESSONS_TIME[lesson_number]['start_time'] and \
+                                    lesson['lesson_time']['end_time'] == LESSONS_TIME[lesson_number]['end_time']:
+                        if lesson['auditorium'] in empty_auditoriums_list:
+                            empty_auditoriums_list.remove(lesson['auditorium'])
+    return empty_auditoriums_list
 
+
+def auditoriums_comparator(a, b):
+    if a['building'] > b['building']:
+        return 1
+    elif a['building'] < b['building']:
+        return -1
+    elif a['building'] == b['building']:
+        if a['number'] > b['number']:
+            return 1
+        else:
+            return -1
 
 
 if __name__ == '__main__':
-    # lesson_number = int(input('Введите номер пары: '))
-    # week_number = int(intput('Введите номер недели: '))
-    # building_number = int(input('Введите номер корпуса: '))
+    lesson_number = int(input('Введите номер пары: '))
+    week_number = int(input('Введите номер недели: '))
+    day = input('Введите день недели: ')
     full_timetable = get_full_timetable()
     auditoriums_list = get_all_auditoriums(full_timetable)
-    for auditorium in auditoriums_list:
-        print('{auditorium[number]}-{auditorium[building]}'.format(auditorium=auditorium))
+    empty_auditoriums = get_empty_auditorium(lesson_number, week_number, day, auditoriums_list)
+    empty_auditoriums.sort(key=cmp_to_key(auditoriums_comparator))
+    for auditorium in empty_auditoriums:
+        print("{auditorium[number]}-{auditorium[building]}".format(auditorium=auditorium))
+
