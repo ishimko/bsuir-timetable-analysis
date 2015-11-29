@@ -136,7 +136,7 @@ def get_full_timetable():
 
 
 def get_empty_auditorium(lesson_number, week_number, day, building_numbers, full_auditoriums, full_timetable):
-    if building_numbers[0] != 0:
+    if not 0 in building_numbers:
         empty_auditoriums = set(filter(lambda x: x[1] in building_numbers, full_auditoriums))
     else:
         empty_auditoriums = full_auditoriums
@@ -177,23 +177,66 @@ def print_result(auditoriums_list):
         print('{auditorium[0]}-{auditorium[1]}'.format(auditorium=auditorium))
 
 
+def read_is_today():
+    answer = input(r'Сегодня? (yes/no): ')
+    if answer.lower() == 'yes':
+        return True
+    elif answer.lower() != 'no':
+        print('Ответ не распознан, воспринято как "no"')
+    return False
+
+
+def read_int(prompt, is_valid):
+    user_input = ''
+    while not (user_input.isnumeric() and is_valid(int(user_input))):
+        user_input = input(prompt)
+    return int(user_input)
+
+
+def read_building_numbers():
+    def check_building_input(user_input):
+        result = set()
+        for building in user_input.split():
+            if not building.isnumeric() or (int(building) > 7 or int(building) < 0):
+                return False
+            else:
+                result.add(int(building))
+        return result
+
+    result = set()
+    while not result:
+        result = check_building_input(input('Введите номер(а) корпусов (1-7, 0 - все корпуса): '))
+
+    return result
+
+
+def read_week_day():
+    user_input = ''
+    while not (user_input.capitalize() in DAYS_LIST or (user_input.isnumeric() and 0 < int(user_input) < 7)):
+        user_input = input('Введите день недели: ')
+
+    return DAYS_LIST[int(user_input) - 1] if user_input.isnumeric() else user_input
+
+
 if __name__ == '__main__':
-    isToday = input(r'Сегодня? (yes/no): ') == 'yes'
+    is_today = read_is_today()
 
-    lesson_number = int(input('Введите номер пары: '))
-    building_numbers = [int(x) for x in input('Введите номер(а) корпусов (0 - все корпуса): ').split()]
+    lesson_number = read_int(prompt='Введите номер пары (1-6): ', is_valid=lambda x: 0 < x < 7)
+    building_numbers = read_building_numbers()
 
-    if isToday:
+    if is_today:
         week_number = get_current_week_number()
         day = get_current_week_day()
         print('{} учебная неделя, {}'.format(week_number, day))
     else:
-        week_number = int(input('Введите номер недели: '))
-        day = input('Введите день недели: ')
+        week_number = read_int(prompt='Введите номер недели (1-4, 0 - текущая): ', is_valid=lambda x: -1 < x < 5)
+        if week_number == 0:
+            week_number = get_current_week_number()
+            print('{} учебная неделя'.format(week_number))
+        day = read_week_day()
 
     full_timetable = get_full_timetable()
     auditoriums_list = get_all_auditoriums(full_timetable)
     empty_auditoriums = get_empty_auditorium(lesson_number, week_number, day, building_numbers, auditoriums_list,
                                              full_timetable)
-    empty_auditoriums_list = sorted(empty_auditoriums, key=cmp_to_key(auditoriums_comparator))
-    print_result(empty_auditoriums_list)
+    print_result(sorted(empty_auditoriums, key=cmp_to_key(auditoriums_comparator)))
