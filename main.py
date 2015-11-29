@@ -178,10 +178,10 @@ def print_result(auditoriums_list):
 
 
 def read_is_today():
-    answer = input(r'Сегодня? (yes/no): ')
-    if answer.lower() == 'yes':
+    answer = input(r'Сегодня? (yes/no): ').lower()
+    if answer == 'yes':
         return True
-    elif answer.lower() != 'no':
+    elif answer != 'no':
         print('Ответ не распознан, воспринято как "no"')
     return False
 
