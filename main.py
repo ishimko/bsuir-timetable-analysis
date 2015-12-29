@@ -41,7 +41,7 @@ def repr_lesson_time(lesson_time):
 
 
 def write_result(busyness_dict, result_file):
-    with open(result_file, 'w') as f:
+    with open(result_file, 'w', encoding='utf-8') as f:
         for auditorium in sorted(busyness_dict.keys(), key=cmp_to_key(auditoriums_comparator)):
             f.write("{}-{}:\n".format(auditorium[0], auditorium[1]))
             for week_day in sorted(busyness_dict[auditorium], key=lambda x: DAYS_LIST.index(x)):
