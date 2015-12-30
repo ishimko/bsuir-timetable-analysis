@@ -5,8 +5,6 @@ from functools import cmp_to_key
 from helper import log_error, press_enter
 from downloader import download_timetable
 
-DAYS_LIST = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота']
-
 
 def auditoriums_comparator(a, b):
     if a[1] > b[1]:
@@ -60,13 +58,15 @@ def repr_employee(employee_dict):
 
 
 def write_result(busyness_dict, result_file):
+    days_list = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота']
+
     try:
         print('Запись результата...\n')
         f = open(result_file, 'w', encoding='utf-8')
 
         for auditorium in sorted(busyness_dict.keys(), key=cmp_to_key(auditoriums_comparator)):
             f.write('{}-{}:\n'.format(auditorium[0], auditorium[1]))
-            for week_day in sorted(busyness_dict[auditorium], key=lambda x: DAYS_LIST.index(x)):
+            for week_day in sorted(busyness_dict[auditorium], key=lambda x: days_list.index(x)):
                 f.write('\t{}:\n'.format(week_day))
                 for week_number in busyness_dict[auditorium][week_day]:
                     f.write('\t\tнеделя {}\n'.format(week_number))
