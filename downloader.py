@@ -1,11 +1,16 @@
 import re
+import sys
 import shelve
 import xml.etree.ElementTree as ET
 import urllib
 from urllib import request, error
+from helper import log_error
 
 GROUPS_LIST_URL = r'http://www.bsuir.by/schedule/rest/studentGroup'
 GROUP_TIMETABLE_URL = r'http://www.bsuir.by/schedule/rest/schedule'
+
+TOTAL_DECS = 'Всего групп'
+LOADED_DECS = 'Загружено'
 
 
 def parse_auditory(lesson_xml):
@@ -85,6 +90,8 @@ def get_page(url):
 
 
 def get_all_groups():
+    print("Получение списка групп с расписанием...")
+
     result = []
     groups_xml = ET.fromstring(get_page(GROUPS_LIST_URL))
     for current_group in groups_xml.iter('studentGroup'):
@@ -94,25 +101,26 @@ def get_all_groups():
 
 
 def download_timetable(cache_path):
-    timetable_db = shelve.open(cache_path, writeback=True)
+    try:
+        timetable_db = shelve.open(cache_path, writeback=True)
+    except (OSError, FileNotFoundError):
+        log_error("Невозможно использовать базу с таким именем!")
 
     try:
         groups = sorted(get_all_groups(), key=lambda x: x[1])
-        total = len(groups)
+        total_number = len(groups)
+        print('{} - {}'.format(TOTAL_DECS, total_number))
 
-        current = [x[1] for x in groups].index(max(timetable_db.keys())) + 1 if len(timetable_db) else 0
+        loaded_number = [x[1] for x in groups].index(max(timetable_db.keys())) + 1 if len(timetable_db) else 0
+        print('{} - {}'.format(LOADED_DECS.rjust(len(TOTAL_DECS)), str(loaded_number).rjust(len(str(total_number)))))
 
-        groups = groups[current:]
+        groups = groups[loaded_number:]
 
         for group_id, group_name in groups:
-            print(r'{}/{}'.format(current + 1, total))
+            print(r'{}/{}'.format(str(loaded_number + 1).rjust(len(str(total_number))), total_number))
             timetable_db[group_name] = parse_group_timetable(ET.fromstring(load_group_timetable(group_id)))
-            current += 1
+            loaded_number += 1
     except (ConnectionError, TimeoutError, urllib.error.HTTPError, urllib.error.URLError):
-        print('Ошибка загрузки данных. Проверьте соединение с интернетом!')
+        log_error('Невозможно загрузить данные. Проверьте соединение с интернетом!')
     finally:
         timetable_db.close()
-
-
-if __name__ == '__main__':
-    download_timetable('timetable')

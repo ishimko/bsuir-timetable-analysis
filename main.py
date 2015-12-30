@@ -1,10 +1,11 @@
 import shelve
+import sys
 from collections import defaultdict
 from functools import cmp_to_key
+from helper import log_error, press_enter
+from downloader import download_timetable
 
 DAYS_LIST = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота']
-TIMETABLE_CACHE_PATH = 'timetable'
-RESULT_FILE_PATH = 'result.txt'
 
 
 def auditoriums_comparator(a, b):
@@ -19,6 +20,8 @@ def auditoriums_comparator(a, b):
 
 
 def build_auditoriums_busyness(timetable_db_path):
+    print('Обработка расписания...')
+
     timetable_db = shelve.open(timetable_db_path)
 
     result = defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: defaultdict(list)))))
@@ -57,7 +60,10 @@ def repr_employee(employee_dict):
 
 
 def write_result(busyness_dict, result_file):
-    with open(result_file, 'w', encoding='utf-8') as f:
+    try:
+        print('Запись результата...\n')
+        f = open(result_file, 'w', encoding='utf-8')
+
         for auditorium in sorted(busyness_dict.keys(), key=cmp_to_key(auditoriums_comparator)):
             f.write('{}-{}:\n'.format(auditorium[0], auditorium[1]))
             for week_day in sorted(busyness_dict[auditorium], key=lambda x: DAYS_LIST.index(x)):
@@ -74,7 +80,18 @@ def write_result(busyness_dict, result_file):
 
                         for group in sorted(lesson_info['groups']):
                             f.write('\t' * 4 + 'группа {}\n'.format(group))
+    except IOError:
+        log_error("Невозможно записать результат в файл с таким именем!")
 
 
 if __name__ == '__main__':
-    write_result(build_auditoriums_busyness(TIMETABLE_CACHE_PATH), RESULT_FILE_PATH)
+    if len(sys.argv) != 3:
+        log_error("Недостаточно параметров!")
+
+    timetable_cache_path = sys.argv[1]
+    result_file_path = sys.argv[2]
+
+    download_timetable(timetable_cache_path)
+    write_result(build_auditoriums_busyness(timetable_cache_path), result_file_path)
+
+    press_enter()
