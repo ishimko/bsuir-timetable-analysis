@@ -1,20 +1,8 @@
 import shelve
 import sys
 from collections import defaultdict
-from functools import cmp_to_key
-from helper import log_error, press_enter
 from downloader import download_timetable
-
-
-def auditoriums_comparator(a, b):
-    if a[1] > b[1]:
-        return 1
-    elif a[1] < b[1]:
-        return -1
-    elif a[0] > b[0]:
-        return 1
-    else:
-        return -1
+from helper import log_error, press_enter
 
 
 def build_auditoriums_busyness(timetable_db_path):
@@ -64,7 +52,7 @@ def write_result(busyness_dict, result_file):
         print('Запись результата...\n')
         f = open(result_file, 'w', encoding='utf-8')
 
-        for auditorium in sorted(busyness_dict.keys(), key=cmp_to_key(auditoriums_comparator)):
+        for auditorium in sorted(busyness_dict.keys(), key=lambda x: (x[1], x[0])):
             f.write('{}-{}:\n'.format(auditorium[0], auditorium[1]))
             for week_day in sorted(busyness_dict[auditorium], key=lambda x: days_list.index(x)):
                 f.write('\t{}:\n'.format(week_day))
