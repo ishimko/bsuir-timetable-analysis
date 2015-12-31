@@ -31,11 +31,15 @@ def build_auditoriums_busyness(timetable_db_path):
 
 
 def repr_lesson_time(lesson_time):
-    lesson_time = str(lesson_time)
-    if len(lesson_time) == 3:
-        return '0' + lesson_time[0] + ':' + lesson_time[1:]
-    else:
-        return lesson_time[0:2] + ':' + lesson_time[2:]
+    time_str_list = []
+    for time in lesson_time:
+        time_str = str(time)
+        if len(time_str) == 3:
+            time_str_list.append('0' + time_str[0] + ':' + time_str[1:])
+        else:
+            time_str_list.append(time_str[0:2] + ':' + time_str[2:])
+
+    return ' - '.join(time_str_list)
 
 
 def repr_employee(employee_dict):
@@ -61,8 +65,7 @@ def write_result(busyness_dict, result_file):
                     for lesson_time in sorted(busyness_dict[auditorium][week_day][week_number], key=lambda x: x[1]):
                         lesson_info = busyness_dict[auditorium][week_day][week_number][lesson_time]
 
-                        f.write('\t' * 3 + '{} - {}\n'.format(repr_lesson_time(lesson_time[0]),
-                                                              repr_lesson_time(lesson_time[1])))
+                        f.write('\t' * 3 + '{}\n'.format(repr_lesson_time(lesson_time)))
                         f.write('\t' * 4 + 'предмет: {}\n'.format(lesson_info['subject']))
                         f.write('\t' * 4 + 'преподаватель: {}\n\n'.format(repr_employee(lesson_info['employee'])))
 
