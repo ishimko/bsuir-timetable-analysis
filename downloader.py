@@ -1,9 +1,9 @@
 import re
-import sys
 import shelve
-import xml.etree.ElementTree as ET
 import urllib
+import xml.etree.ElementTree as ET
 from urllib import request, error
+
 from helper import log_error
 
 GROUPS_LIST_URL = r'http://www.bsuir.by/schedule/rest/studentGroup'
