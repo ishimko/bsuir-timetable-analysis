@@ -103,8 +103,8 @@ def get_all_groups():
 def download_timetable(cache_path):
     try:
         timetable_db = shelve.open(cache_path, writeback=True)
-    except (OSError, FileNotFoundError):
-        log_error("Невозможно использовать базу с таким именем!")
+    except OSError as e:
+        log_error("Невозможно использовать выбранную базу: {}".format(e.strerror))
 
     try:
         groups = sorted(get_all_groups(), key=lambda x: x[1])

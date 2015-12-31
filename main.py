@@ -71,8 +71,8 @@ def write_result(busyness_dict, result_file):
 
                         for group in sorted(lesson_info['groups']):
                             f.write('\t' * 4 + 'группа {}\n'.format(group))
-    except IOError:
-        log_error("Невозможно записать результат в файл с таким именем!")
+    except OSError as e:
+        log_error("Невозможно записать результат: {}".format(e.strerror))
 
 
 if __name__ == '__main__':
