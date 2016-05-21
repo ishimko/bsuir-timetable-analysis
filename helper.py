@@ -7,10 +7,14 @@ def print_help():
     """)
 
 
-def log_error(msg):
+def fatal_error(msg):
     print("Ошибка: {}\n".format(msg))
     print_help()
     exit(1)
+
+
+def log_info(msg):
+    print(msg)
 
 
 def press_enter():

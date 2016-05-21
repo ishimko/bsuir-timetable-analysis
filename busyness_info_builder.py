@@ -1,11 +1,11 @@
 import shelve
 from collections import defaultdict
-from downloader import download_timetable
-from helper import log_error, press_enter
+
+from helper import fatal_error, log_info
 
 
 def build_auditoriums_busyness(timetable_db_path):
-    print('Обработка расписания...')
+    log_info('Обработка расписания...')
 
     timetable_db = shelve.open(timetable_db_path)
 
@@ -41,28 +41,28 @@ def repr_lesson_time(lesson_time):
     return ' - '.join(time_str_list)
 
 
-def repr_employee(employee_dict):
-    if not employee_dict:
+def repr_employee(employee):
+    if not employee:
         return 'нет информации'
     else:
-        return '{employee[last_name]} {employee[first_name]} {employee[middle_name]}'.format(employee=employee_dict)
+        return '{employee[last_name]} {employee[first_name]} {employee[middle_name]}'.format(employee=employee)
 
 
-def write_result(busyness_dict, result_file):
+def write_result(busyness, result_file):
     days_list = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота']
 
     try:
-        print('Запись результата...\n')
+        log_info('Запись результата...\n')
         f = open(result_file, 'w', encoding='utf-8')
 
-        for auditorium in sorted(busyness_dict.keys(), key=lambda x: (x[1], x[0])):
+        for auditorium in sorted(busyness.keys(), key=lambda x: (x[1], x[0])):
             f.write('{}-{}:\n'.format(auditorium[0], auditorium[1]))
-            for week_day in sorted(busyness_dict[auditorium], key=lambda x: days_list.index(x)):
+            for week_day in sorted(busyness[auditorium], key=lambda x: days_list.index(x)):
                 f.write('\t{}:\n'.format(week_day))
-                for week_number in busyness_dict[auditorium][week_day]:
+                for week_number in busyness[auditorium][week_day]:
                     f.write('\t\tнеделя {}\n'.format(week_number))
-                    for lesson_time in sorted(busyness_dict[auditorium][week_day][week_number], key=lambda x: x[1]):
-                        lesson_info = busyness_dict[auditorium][week_day][week_number][lesson_time]
+                    for lesson_time in sorted(busyness[auditorium][week_day][week_number], key=lambda x: x[1]):
+                        lesson_info = busyness[auditorium][week_day][week_number][lesson_time]
 
                         f.write('\t' * 3 + '{}\n'.format(repr_lesson_time(lesson_time)))
                         f.write('\t' * 4 + 'предмет: {}\n'.format(lesson_info['subject']))
@@ -71,5 +71,5 @@ def write_result(busyness_dict, result_file):
                         for group in sorted(lesson_info['groups']):
                             f.write('\t' * 4 + 'группа {}\n'.format(group))
     except OSError as e:
-        log_error("Не удалось записать результат: {}".format(e.strerror))
+        fatal_error("Не удалось записать результат: {}".format(e.strerror))
 
