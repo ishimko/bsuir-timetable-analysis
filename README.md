@@ -1,4 +1,5 @@
 # BSUIR timetable analysis util
+
 ```
 usage: main.py [-h] [--skip-check] [--action ACTION] cache-path output_path
 
@@ -9,4 +10,5 @@ positional arguments:
 optional arguments:
   -h, --help       show this help message and exit
   --skip-check     skip loading a timetable, use cache
-  --action ACTION  script to run against built info```
+  --action ACTION  script to run against built info
+```
