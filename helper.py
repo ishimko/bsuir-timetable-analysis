@@ -5,8 +5,3 @@ def fatal_error(msg):
 
 def log_info(msg):
     print(msg)
-
-
-def press_enter():
-    print("Нажмите Enter...")
-    input()

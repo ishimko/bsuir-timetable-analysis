@@ -1,77 +1,77 @@
 import re
 import shelve
 import urllib
-import xml.etree.ElementTree as ET
+import json
 from urllib import request, error
 
 from helper import fatal_error, log_info
 
-GROUPS_LIST_URL = r'http://www.bsuir.by/schedule/rest/studentGroup'
-GROUP_TIMETABLE_URL = r'http://www.bsuir.by/schedule/rest/schedule'
+GROUPS_LIST_URL = r'https://students.bsuir.by/api/v1/groups'
+GROUP_TIMETABLE_URL = r'https://students.bsuir.by/api/v1/studentGroup/schedule?id={}'
 
-TOTAL_DECS = 'Всего групп'
-LOADED_DECS = 'Загружено'
+TOTAL_DECS = 'Total'
+LOADED_DECS = 'Loaded'
 
 
 def parse_auditory(lesson):
-    auditory_xml = lesson.find('auditory')
-    if auditory_xml is not None:
-        auditory_info = auditory_xml.text
+    auditory = lesson['auditory']
+    if auditory:
+        auditory_str = auditory[0]
     else:
         return None
 
-    auditory_info = re.sub(r'\D', ' ', auditory_info).split()
+    auditory_str = re.sub(r'\D', ' ', auditory_str).split()
 
-    if len(auditory_info) != 2:
+    if len(auditory_str) != 2:
         return None
 
-    return int(auditory_info[0]), int(auditory_info[1])
+    return int(auditory_str[0]), int(auditory_str[1])
 
 
 def parse_lesson_time(lesson):
-    lesson_time_str = lesson.find('lessonTime').text
-    lesson_time_values = re.sub(r'\D', ' ', lesson_time_str).split()
-
-    return int(''.join(lesson_time_values[:2])), int(''.join(lesson_time_values[2:4]))
+    return lesson['startLessonTime'], lesson['endLessonTime']
 
 
 def parse_lesson_week_number(lesson):
     result = []
-    for week_number in lesson.iter('weekNumber'):
-        if int(week_number.text) != 0:
-            result.append(int(week_number.text))
+    for week_number in lesson['weekNumber']:
+        if int(week_number) != 0:
+            result.append(int(week_number))
 
     return result
 
 
 def parse_group_timetable(group_timetable):
     result = []
-    for current_day_xml in group_timetable.iter('scheduleModel'):
-        day_timetable = parse_day_timetable(current_day_xml)
+    for current_day in group_timetable['schedules']:
+        day_timetable = parse_day_timetable(current_day)
         result.append(day_timetable)
 
     return result
 
 
 def parse_employee(lesson):
-    employee = lesson.find('employee')
-    if employee is not None:
-        return {'first_name': employee.find('firstName').text,
-                'middle_name': employee.find('middleName').text,
-                'last_name': employee.find('lastName').text}
+    employee = lesson['employee']
+    if employee:
+        employee = employee[0]
+        return {
+            'first_name': employee['firstName'],
+            'middle_name': employee['middleName'],
+            'last_name': employee['lastName']
+        }
     else:
         return {}
 
 
-def parse_day_timetable(day_timetable_xml):
-    result = {'week_day': day_timetable_xml.find('weekDay').text, 'lessons': []}
+def parse_day_timetable(day_timetable):
+    result = {'week_day': day_timetable['weekDay'], 'lessons': []}
 
-    for current_lesson_xml in day_timetable_xml.iter('schedule'):
-        lesson = {'week_numbers': parse_lesson_week_number(current_lesson_xml),
-                  'lesson_time': parse_lesson_time(current_lesson_xml),
-                  'employee': parse_employee(current_lesson_xml),
-                  'subject': current_lesson_xml.find('subject').text}
-        auditory = parse_auditory(current_lesson_xml)
+    for current_lesson in day_timetable['schedule']:
+        lesson = {'week_numbers': parse_lesson_week_number(current_lesson),
+                  'lesson_time': parse_lesson_time(current_lesson),
+                  'employee': parse_employee(current_lesson),
+                  'subject': current_lesson['subject']}
+        auditory = parse_auditory(current_lesson)
         if auditory:
             lesson['auditory'] = auditory
 
@@ -81,21 +81,25 @@ def parse_day_timetable(day_timetable_xml):
 
 
 def load_group_timetable(group_id):
-    return get_page(GROUP_TIMETABLE_URL + '/' + str(group_id))
+    try:
+        return get_page(GROUP_TIMETABLE_URL.format(group_id))
+    except urllib.error.HTTPError:
+        return None
 
 
 def get_page(url):
-    log_info('Загрузка ' + url + '...')
+    log_info('Loading ' + url)
     return request.urlopen(url).read()
 
 
 def get_all_groups():
-    log_info("Получение списка групп с расписанием...")
+    log_info("Loading groups list")
 
     result = []
-    groups_xml = ET.fromstring(get_page(GROUPS_LIST_URL))
-    for current_group in groups_xml.iter('studentGroup'):
-        result.append((current_group.find('id').text, current_group.find('name').text))
+    response_string = get_page(GROUPS_LIST_URL)
+    groups = json.loads(response_string)
+    for current_group in groups:
+        result.append((current_group['id'], current_group['name']))
 
     return result
 
@@ -104,7 +108,7 @@ def download_timetable(cache_path):
     try:
         timetable_db = shelve.open(cache_path, writeback=True)
     except OSError as e:
-        fatal_error("Не удалось использовать базу: {}".format(e.strerror))
+        fatal_error("Can not open local db: {}".format(e.strerror))
         return
 
     try:
@@ -119,9 +123,14 @@ def download_timetable(cache_path):
 
         for group_id, group_name in groups:
             log_info(r'{}/{}'.format(str(loaded_number + 1).rjust(len(str(total_number))), total_number))
-            timetable_db[group_name] = parse_group_timetable(ET.fromstring(load_group_timetable(group_id)))
+            response_string = load_group_timetable(group_id)
+            if response_string:
+                timetable_json = json.loads(response_string)
+                timetable_db[group_name] = parse_group_timetable(timetable_json)
+            else:
+                log_info(f'Unable to load a timetable for the group {group_name}, skipping')
             loaded_number += 1
-    except (ConnectionError, TimeoutError, urllib.error.HTTPError, urllib.error.URLError):
-        fatal_error('Невозможно загрузить данные. Проверьте соединение с интернетом!')
+    except (ConnectionError, TimeoutError, urllib.error.URLError):
+        fatal_error('Connection error')
     finally:
         timetable_db.close()
