@@ -1,9 +1,12 @@
-# empty-auditorium-finder
-Скрипт для получения графика занятости аудиторий в БГУИР.
+# BSUIR timetable analysis util
+```
+usage: main.py [-h] [--skip-check] [--action ACTION] cache-path output_path
 
-Запускать main.py:
+positional arguments:
+  cache-path       path to the cache of a timetable
+  output_path      path to the output file
 
-- <i>первый параметр</i> - путь к кэшу, куда будет загружаться расписание
-(имя указывать без расширения, по указанному пути будут созданы файлы с заданным именем и расширениями
-dir, bak, dat). Нужен для того, чтобы при разрыве соединения не приходилось заново перекачивать;
-- <i>второй параметр</i> - путь к файлу, куда будет записан результат.
+optional arguments:
+  -h, --help       show this help message and exit
+  --skip-check     skip loading a timetable, use cache
+  --action ACTION  script to run against built info```
