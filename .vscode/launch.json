@@ -11,9 +11,7 @@
             "program": "${workspaceFolder}\\main.py",
             "args": [
                 "timetable",
-                "all.json",
                 "--skip-check",
-                "--action=represent"
             ]
         },
         {
