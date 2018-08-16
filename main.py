@@ -1,13 +1,15 @@
 import json
 import argparse
+import shelve
+from importlib import import_module
 from helper import fatal_error, log_info
 from downloader import download_timetable
-import shelve
 from busyness_info_builder import build_auditoriums_busyness
-from importlib import import_module
 
 
-DEFAULT_ACTION_NAME = 'represent'
+class Defaults:
+    DefaultActionName = 'represent'
+    DefaultCachePath = 'timetable'
 
 
 def execute_action(busyness, action_name):
@@ -26,13 +28,15 @@ def write_result(obj, result_file):
 
 
 def main(args):
+    cache_path = args.cache_path if args.cache_path else Defaults.DefaultCachePath
+    action_name = args.action if args.action else Defaults.DefaultActionName
+    output_path = args.output if args.output else f'{action_name}.json'
+
     if not args.skip_check:
         log_info('Loading timetable')
-        download_timetable(args.cache_path)
-    timetable_db = shelve.open(args.cache_path, writeback=True)
+        download_timetable(cache_path)
+    timetable_db = shelve.open(cache_path, writeback=True)
     result = build_auditoriums_busyness(timetable_db)
-    action_name = args.action if args.action else DEFAULT_ACTION_NAME
-    output_path = args.output if args.output else f'{action_name}.json'
     log_info('Executing action')
     result = execute_action(result, action_name)
     log_info('Writing results')
@@ -41,7 +45,7 @@ def main(args):
 
 if __name__ == '__main__':
     argument_parser = argparse.ArgumentParser(description="BSUIR timetable analysis util")
-    argument_parser.add_argument('cache_path', metavar='cache-path', type=str, help='path to the cache of a timetable')
+    argument_parser.add_argument('--cache-path', type=str, help='path to the cache of a timetable, default is "timetable"')
     argument_parser.add_argument('--output', type=str, help='path to the output file, default is <action>.json')
     argument_parser.add_argument('--skip-check', action='store_true', help='skip loading a timetable, use cache')
     argument_parser.add_argument('--action', type=str, help='script to run against built info, default is "represent"')
