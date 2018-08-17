@@ -2,9 +2,9 @@ import json
 import argparse
 import shelve
 from importlib import import_module
-from helper import fatal_error, log_info
-from downloader import download_timetable
-from busyness_info_builder import build_auditoriums_busyness
+from core.helper import fatal_error, log_info
+from core.downloader import download_timetable
+from core.busyness_info_builder import build_auditoriums_busyness
 
 
 class Defaults:
@@ -13,7 +13,7 @@ class Defaults:
 
 
 def execute_action(busyness, action_name):
-    action_module = import_module(action_name)
+    action_module = import_module(f'.{action_name}', 'actions')
     action_func = getattr(action_module, 'action')
     result = action_func(busyness)
     return result
@@ -48,7 +48,9 @@ if __name__ == '__main__':
     argument_parser.add_argument('--cache-path', type=str, help='path to the cache of a timetable, default is "timetable"')
     argument_parser.add_argument('--output', type=str, help='path to the output file, default is <action>.json')
     argument_parser.add_argument('--skip-check', action='store_true', help='skip loading a timetable, use cache')
-    argument_parser.add_argument('--action', type=str, help='script to run against built info, default is "represent"')
+    argument_parser.add_argument('--action', type=str, help='script to run against built info, default is "represent", '+
+        'the file should be placed under "actions" folder and have "action" function defined with one argument '+
+        '(built timetable info will be passed as an argument)')
 
     args = argument_parser.parse_args()
     main(args)

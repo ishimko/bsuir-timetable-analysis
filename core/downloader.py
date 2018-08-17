@@ -4,7 +4,7 @@ import urllib
 import json
 from urllib import request, error
 
-from helper import fatal_error, log_info
+from .helper import fatal_error, log_info
 
 GROUPS_LIST_URL = r'https://students.bsuir.by/api/v1/groups'
 GROUP_TIMETABLE_URL = r'https://students.bsuir.by/api/v1/studentGroup/schedule?id={}'

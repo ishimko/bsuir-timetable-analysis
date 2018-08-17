@@ -1,7 +1,8 @@
 import shelve
 from collections import defaultdict, OrderedDict
-from helper import fatal_error, log_info
 import json
+
+from .helper import fatal_error, log_info
 
 
 def build_auditoriums_busyness(timetable_db):

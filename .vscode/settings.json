@@ -9,6 +9,6 @@
         "**/.idea": true,
         "*.json": true,
         "timetable.*": true,
-        "__pycache__": true
+        "**/__pycache__": true
     }
 }
