@@ -5,7 +5,7 @@ import json
 from .helper import fatal_error, log_info
 
 
-def build_auditoriums_busyness(timetable_db):
+def find_auditoriums_usage(timetable_db):
     result = defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: defaultdict(list)))))
 
     for group_name in timetable_db:

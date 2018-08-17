@@ -4,7 +4,7 @@ import shelve
 from importlib import import_module
 from core.helper import fatal_error, log_info
 from core.downloader import download_timetable
-from core.busyness_info_builder import build_auditoriums_busyness
+from core.usage_info_builder import find_auditoriums_usage
 
 
 class Defaults:
@@ -12,10 +12,10 @@ class Defaults:
     DefaultCachePath = 'timetable'
 
 
-def execute_action(busyness, action_name):
+def execute_action(auditoriums_usage, action_name):
     action_module = import_module(f'.{action_name}', 'actions')
     action_func = getattr(action_module, 'action')
-    result = action_func(busyness)
+    result = action_func(auditoriums_usage)
     return result
 
 
@@ -36,7 +36,7 @@ def main(args):
         log_info('Loading timetable')
         download_timetable(cache_path)
     timetable_db = shelve.open(cache_path, writeback=True)
-    result = build_auditoriums_busyness(timetable_db)
+    result = find_auditoriums_usage(timetable_db)
     log_info('Executing action')
     result = execute_action(result, action_name)
     log_info('Writing results')
@@ -44,7 +44,7 @@ def main(args):
 
 
 if __name__ == '__main__':
-    argument_parser = argparse.ArgumentParser(description="BSUIR timetable analysis util")
+    argument_parser = argparse.ArgumentParser(description="BSUIR timetable analysis tool")
     argument_parser.add_argument('--cache-path', type=str, help='path to the cache of a timetable, default is "timetable"')
     argument_parser.add_argument('--output', type=str, help='path to the output file, default is <action>.json')
     argument_parser.add_argument('--skip-check', action='store_true', help='skip loading a timetable, use cache')
